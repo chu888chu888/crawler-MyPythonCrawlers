@@ -13,8 +13,6 @@ from lxml import etree
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-right = u"[1-16周] 周二(1-2)教二-403,周四(双3-4)教二-403"
-
 # 去除无用的信息
 def beautyText(text):
     text = text.replace('&nbsp;', '').strip()
@@ -73,13 +71,13 @@ def getTimeAndPlaceDetail(mixedStr):
 
                 if part.find('单') != -1:  # 单周上课
                     copyInfo['beginTime'] = part[
-                        part.find('单') + len("单"): part.find('-')].strip()
+                        part.find(u'单') + len(u"单"): part.find('-')].strip()
                     copyInfo['endTime'] = part[
                         part.find('-') + 1: part.find(')')].strip()
                     copyInfo['classType'] = 1
                 elif part.find('双') != -1:  # 双周上课
                     copyInfo['beginTime'] = part[
-                        part.find('双') + len("双"): part.find('-')].strip()
+                        part.find(u'双') + len(u"双"): part.find('-')].strip()
                     copyInfo['endTime'] = part[
                         part.find('-') + 1: part.find(')')].strip()
                     copyInfo['classType'] = -1
@@ -89,10 +87,10 @@ def getTimeAndPlaceDetail(mixedStr):
                     copyInfo['endTime'] = part[
                         part.find('-') + 1: part.find(')')].strip()
 
-                # # 将字符串转化成整型
-                # for (k, v) in copyInfo.items():
-                #     if v.__class__ == "".__class__ and v.isdigit():
-                #         copyInfo[k] = int(v)
+                # 将字符串转化成整型
+                for (k, v) in copyInfo.items():
+                    if v.__class__ == "".__class__ and v.isdigit():
+                        copyInfo[k] = int(v)
 
                 w = part[0: part.find('(')].strip()
                 if w == '周一':
@@ -111,14 +109,14 @@ def getTimeAndPlaceDetail(mixedStr):
                     copyInfo['classWeek'] = 7
 
                 # 测试。。
-                if len(copyInfo['beginTime']) == 0:
-                    print "传入的参数:", mixedStr
-                    print "分割后的数组:", splitedParts
-                    for i in splitedParts:
-                        print i
-                    print "出现bug的part:", part
-                    print "是否一致", right == mixedStr
-                    exit()
+                # if len(copyInfo['beginTime']) == 0:
+                #     print "传入的参数:", mixedStr
+                #     print "分割后的数组:", splitedParts
+                #     for i in splitedParts:
+                #         print i
+                #     print "出现bug的part:", part
+                #     print "是否一致", right == mixedStr
+                    # exit()
 
                 result.append(copyInfo)
 
@@ -129,7 +127,7 @@ def main():
     # setup
     term = '13-14-3'
     termPrefix = '13143'
-
+    
     conn = MySQLdb.connect(
         host="localhost", user="goclis", passwd="qqqqqq", db="goclis", charset="utf8")
     cursor = conn.cursor()
@@ -146,7 +144,7 @@ def main():
         text = node.text
         dpmId = text[text.find('[') + 1: text.find(']')]  # 院系的编号
 
-        dpmPageSource = requests.get(url).text   
+        dpmPageSource = requests.get(url).text 
         
         dpmHtml = etree.HTML(dpmPageSource)
 
@@ -165,33 +163,31 @@ def main():
             courseTimeAndPlace = beautyText(tds[5].text)  # 上课的时间和地点
 
             timeAndPlaceInfos = getTimeAndPlaceDetail(courseTimeAndPlace)
-            # for item in timeAndPlaceInfos:
-            #     # 存入数据库
-            #     sql = "INSERT INTO course (beginWeekNum, endWeekNum, classWeek, classBeginTime, \
-            #                 classEndTime, classPlace, classType, term, courseName, teacher, courseId) \
-            #                     VALUES (%s, %s, %s, %s, %s, '%s', %s, '%s', '%s', '%s', '%s')" % \
-            #         (item[
-            #          'beginWeekNum'], item['endWeekNum'],
-            #          item['classWeek'], item[
-            #          'beginTime'], item[
-            #          'endTime'], item['place'],
-            #          item['classType'], courseTerm, courseName, 
-            #          courseTeacher, courseId)
-            #     print sql
-            #     n = cursor.execute(sql)
+            for item in timeAndPlaceInfos:
+                # 存入数据库
+                sql = "INSERT INTO course (beginWeekNum, endWeekNum, classWeek, classBeginTime, \
+                            classEndTime, classPlace, classType, term, courseName, teacher, courseId) \
+                                VALUES (%s, %s, %s, %s, %s, '%s', %s, '%s', '%s', '%s', '%s')" % \
+                    (item[
+                     'beginWeekNum'], item['endWeekNum'],
+                     item['classWeek'], item[
+                     'beginTime'], item[
+                     'endTime'], item['place'],
+                     item['classType'], courseTerm, courseName, 
+                     courseTeacher, courseId)
+                print sql
+                n = cursor.execute(sql)
 
-            #     conn.commit()
+                conn.commit()
 
 
 
 def testTimeAndPlaceDetail():
-    r = getTimeAndPlaceDetail('[1-16周] 周二(1-2)教二-403,周四(双3-4)教二-403')
+    r = getTimeAndPlaceDetail(u'[1-16周]周四(双3-4)教二-403')
     for item in r:
         for (k, v) in item.items():
             print k, v
     print r
 
 # testTimeAndPlaceDetail()
-
-# print getTimeAndPlaceDetail('[1-16周] 周二(1-2)教二-403,周四(双3-4)教二-403')
 main()
